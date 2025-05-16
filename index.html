@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>String Art Portrait Generator</title>
   <style>
     body {
@@ -13,8 +13,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
+      padding: 20px;
     }
     canvas {
       border: 1px solid #444;
@@ -53,6 +54,7 @@
 
     imageInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
+      if (!file) return;
       const reader = new FileReader();
       reader.onload = function(event) {
         const img = new Image();
@@ -85,6 +87,7 @@
         const t = i / steps;
         const x = Math.round(x1 + (x2 - x1) * t);
         const y = Math.round(y1 + (y2 - y1) * t);
+        if (x < 0 || x >= width || y < 0 || y >= height) continue;
         const index = (y * width + x) * 4;
         const r = imageData.data[index];
         const g = imageData.data[index + 1];
@@ -122,6 +125,8 @@
           }
         }
 
+        if (best === -1) break;
+
         ctx.beginPath();
         ctx.moveTo(nails[current].x, nails[current].y);
         ctx.lineTo(nails[best].x, nails[best].y);
@@ -136,3 +141,4 @@
   </script>
 </body>
 </html>
+
