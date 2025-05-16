@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>String Art Portrait Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      border: 1px solid #444;
+      margin-top: 20px;
+      background-color: #000;
+    }
+    input {
+      margin-top: 10px;
+    }
+    .info {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 String Art Portrait Generator</h1>
+  <input type="file" id="imageInput" accept="image/*">
+  <canvas id="canvas" width="400" height="400"></canvas>
+  <div class="info" id="lineInfo">Lines: 0</div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const imageInput = document.getElementById('imageInput');
+    const lineInfo = document.getElementById('lineInfo');
+    const width = canvas.width;
+    const height = canvas.height;
+    const center = { x: width / 2, y: height / 2 };
+    const radius = width / 2 - 10;
+    const nailCount = 120;
+    const linesToDraw = 300;
+    let nails = [];
+    let imageData;
+    let lineCount = 0;
+
+    imageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          ctx.clearRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          imageData = ctx.getImageData(0, 0, width, height);
+          initNails();
+          drawStringArt();
+        }
+        img.src = event.target.result;
+      }
+      reader.readAsDataURL(file);
+    });
+
+    function initNails() {
+      nails = [];
+      for (let i = 0; i < nailCount; i++) {
+        const angle = (i / nailCount) * 2 * Math.PI;
+        const x = center.x + radius * Math.cos(angle);
+        const y = center.y + radius * Math.sin(angle);
+        nails.push({ x, y });
+      }
+    }
+
+    function getBrightness(x1, y1, x2, y2) {
+      const steps = 100;
+      let total = 0;
+      for (let i = 0; i < steps; i++) {
+        const t = i / steps;
+        const x = Math.round(x1 + (x2 - x1) * t);
+        const y = Math.round(y1 + (y2 - y1) * t);
+        const index = (y * width + x) * 4;
+        const r = imageData.data[index];
+        const g = imageData.data[index + 1];
+        const b = imageData.data[index + 2];
+        const brightness = 255 - (0.299 * r + 0.587 * g + 0.114 * b);
+        total += brightness;
+      }
+      return total / steps;
+    }
+
+    function drawStringArt() {
+      ctx.clearRect(0, 0, width, height);
+      ctx.putImageData(imageData, 0, 0);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = '#00ffcc';
+      ctx.lineWidth = 0.5;
+
+      let current = 0;
+      const visited = new Set();
+      visited.add(current);
+
+      for (let i = 0; i < linesToDraw; i++) {
+        let best = -1;
+        let bestScore = -1;
+
+        for (let j = 0; j < nailCount; j++) {
+          if (j === current) continue;
+          const brightness = getBrightness(
+            nails[current].x, nails[current].y,
+            nails[j].x, nails[j].y
+          );
+          if (brightness > bestScore) {
+            bestScore = brightness;
+            best = j;
+          }
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(nails[current].x, nails[current].y);
+        ctx.lineTo(nails[best].x, nails[best].y);
+        ctx.stroke();
+
+        current = best;
+        visited.add(current);
+        lineCount++;
+        lineInfo.textContent = `Lines: ${lineCount}`;
+      }
+    }
+  </script>
+</body>
+</html>
